@@ -1,0 +1,27 @@
+# Bytecode e cache Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build e distribuição PyInstaller
+build/
+dist/
+
+# Backups gerados pelo app
+*.bak
+
+# Configuração local (caminhos específicos da máquina de cada usuário)
+config.json
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+.env
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.user
