@@ -608,7 +608,7 @@ class App(tk.Tk):
     def _open_item_form(self):
         dlg = tk.Toplevel(self)
         dlg.title("Informações do Item")
-        dlg.geometry("480x480")
+        dlg.geometry("480x560")
         dlg.configure(bg=BG)
         dlg.resizable(False, False)
         dlg.grab_set()
