@@ -39,6 +39,24 @@ LUA_FILES = {
     }
 }
 
+LUA_ITEMS = {
+    "config_server": {
+        "path": os.path.join(BASE_LUA, r"[scripts]\skips_inventario\server-side\Config_server.lua"),
+        "pattern": r"listaDeItens\s*=\s*\{",
+        "format": "\t[\"{index}\"] = {{ index = \"{index}\", nome = \"{name}\", filtro = \"{filtro}\", type = \"{type_pt}\", funcao = false, descricao = \"{descricao}\" }},"
+    },
+    "inventory": {
+        "path": os.path.join(BASE_LUA, r"[vrp]\vrp\modules\inventory.lua"),
+        "pattern": r"local\s+itemlist\s*=\s*\{",
+        "format": "\t[\"{index}\"] = {{\n\t\tindex = \"{index}\",\n\t\tname = \"{name}\",\n\t\ttype = \"{type_en}\",\n\t\tweight = {weight}\n\t}},"
+    },
+    "skips_admin": {
+        "path": os.path.join(BASE_LUA, r"[scripts]\skips_admin\fivem\cfg\config.lua"),
+        "pattern": r"config\.itens\s*=\s*\{",
+        "format": "\t[\"{index}\"] = {{ name = \"{name}\", filtro = \"{filtro}\", type = \"{type_pt}\", funcao = false, descricao = \"{descricao}\" }},"
+    }
+}
+
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
 DEFAULT_CONFIG = {
     "stream_path": r"Z:\Base-MonteAzul\server-data\resources\[veiculos]\monte_veiculos\stream",
@@ -214,6 +232,18 @@ class App(tk.Tk):
             command=self._on_add_car
         )
         self.btn_add.pack(side="left")
+
+        self.btn_add_item = tk.Button(
+            btn_frame,
+            text="➕  Adicionar Item",
+            font=("Segoe UI", 13, "bold"),
+            bg=ACCENT2, fg="white",
+            relief="flat", cursor="hand2",
+            activebackground="#6a4aad", activeforeground="white",
+            padx=24, pady=12,
+            command=self._on_add_item
+        )
+        self.btn_add_item.pack(side="left", padx=(10, 0))
 
         self.status_lbl = tk.Label(btn_frame, text="Pronto.", font=FONT_BODY,
                                    bg=BG, fg=TEXT_DIM)
@@ -563,6 +593,166 @@ class App(tk.Tk):
             self.status_lbl.config(text=f"'{spawn}' adicionado com sucesso!", fg=SUCCESS)
             messagebox.showinfo("Sucesso",
                 f"✔  Veículo '{name}' adicionado com sucesso!\n\nSpawn: {spawn}\nPreço: R$ {price:,}\nTipo: {tipo}")
+        else:
+            self._log_warning(f"Processo concluído com {errors} erro(s). Verifique o log.")
+            self.status_lbl.config(text=f"Concluído com {errors} erro(s).", fg=WARNING)
+            messagebox.showwarning("Atenção",
+                f"Processo concluído com {errors} erro(s).\nVerifique o log para detalhes.")
+
+    # ── FORMULÁRIO DE ITEM ──────────────────────
+
+    def _on_add_item(self):
+        # Abre modal de formulário de item
+        self._open_item_form()
+
+    def _open_item_form(self):
+        dlg = tk.Toplevel(self)
+        dlg.title("Informações do Item")
+        dlg.geometry("480x480")
+        dlg.configure(bg=BG)
+        dlg.resizable(False, False)
+        dlg.grab_set()
+        dlg.transient(self)
+        _center_toplevel(dlg, self)
+
+        # Título
+        tk.Frame(dlg, bg=CARD, height=48).pack(fill="x")
+        hdr = dlg.children[list(dlg.children)[-1]]
+        tk.Label(hdr, text="📦  Novo Item", font=FONT_HEADER,
+                 bg=CARD, fg=TEXT).place(x=16, y=12)
+
+        content = tk.Frame(dlg, bg=BG)
+        content.pack(fill="both", expand=True, padx=24, pady=16)
+
+        def field(parent, label, row, default="", readonly=False):
+            tk.Label(parent, text=label, font=("Segoe UI", 9, "bold"),
+                     bg=BG, fg=TEXT_DIM).grid(row=row, column=0, sticky="w", pady=(8, 0))
+            var = tk.StringVar(value=default)
+            state = "readonly" if readonly else "normal"
+            e = tk.Entry(parent, textvariable=var, font=FONT_BODY,
+                         bg=SURFACE, fg=TEXT, insertbackground=TEXT,
+                         relief="flat", bd=0, highlightthickness=1,
+                         highlightbackground=ACCENT2, highlightcolor=ACCENT,
+                         state=state)
+            e.grid(row=row + 1, column=0, sticky="ew", ipady=6, pady=(2, 0))
+            return var
+
+        content.columnconfigure(0, weight=1)
+
+        var_index    = field(content, "Index do Item (ex: carregadorroubado)", 0)
+        var_name     = field(content, "Nome Exibido (ex: Carregador Roubado)", 2)
+        var_filtro   = field(content, "Filtro (ex: box)", 4, default="box")
+        var_weight   = field(content, "Peso (ex: 0.2)", 6, default="0.2")
+        var_desc     = field(content, "Descrição do Item", 8)
+
+        # Tipo — dropdown
+        tk.Label(content, text="Tipo do Item", font=("Segoe UI", 9, "bold"),
+                 bg=BG, fg=TEXT_DIM).grid(row=10, column=0, sticky="w", pady=(8, 0))
+
+        tipos = ["usar", "equipar"]
+        var_tipo = tk.StringVar(value=tipos[0])
+        combo = ttk.Combobox(content, textvariable=var_tipo, values=tipos,
+                             font=FONT_BODY, state="readonly")
+        combo.grid(row=11, column=0, sticky="ew", ipady=4, pady=(2, 0))
+
+        # Estilo do combobox
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("TCombobox",
+                        fieldbackground=SURFACE, background=SURFACE,
+                        foreground=TEXT, selectbackground=CARD,
+                        arrowcolor=ACCENT)
+
+        # Botões
+        btn_row = tk.Frame(content, bg=BG)
+        btn_row.grid(row=12, column=0, sticky="e", pady=(16, 0))
+
+        def on_cancel():
+            dlg.destroy()
+
+        def on_confirm():
+            index    = var_index.get().strip()
+            name     = var_name.get().strip()
+            filtro   = var_filtro.get().strip()
+            weight_str = var_weight.get().strip()
+            desc     = var_desc.get().strip()
+            tipo     = var_tipo.get().strip()
+
+            # Validação
+            if not index:
+                messagebox.showerror("Erro", "Index do item é obrigatório.", parent=dlg)
+                return
+            if not name:
+                messagebox.showerror("Erro", "Nome exibido é obrigatório.", parent=dlg)
+                return
+            try:
+                weight = float(weight_str)
+            except ValueError:
+                messagebox.showerror("Erro", "Peso deve ser um número.", parent=dlg)
+                return
+
+            dlg.destroy()
+            self._run_item_automation(index, name, filtro, weight, desc, tipo)
+
+        tk.Button(btn_row, text="Cancelar", font=FONT_BTN,
+                  bg=SURFACE, fg=TEXT_DIM, relief="flat", cursor="hand2",
+                  padx=14, pady=6, command=on_cancel).pack(side="left", padx=(0, 8))
+
+        tk.Button(btn_row, text="✔  Confirmar", font=FONT_BTN,
+                  bg=ACCENT, fg="white", relief="flat", cursor="hand2",
+                  activebackground="#c0392b", activeforeground="white",
+                  padx=14, pady=6, command=on_confirm).pack(side="left")
+
+    def _run_item_automation(self, index, name, filtro, weight, desc, tipo):
+        self._log_title(f"Adicionando item: {index}")
+        self.status_lbl.config(text=f"Processando {index}...", fg=WARNING)
+        self.update_idletasks()
+
+        errors = 0
+
+        # Mapeamento do tipo de pt para en (inventory)
+        tipo_en_map = {
+            "usar": "use",
+            "equipar": "equip"
+        }
+        tipo_en = tipo_en_map.get(tipo, "use")
+
+        self._log_info("Inserindo item nos arquivos .lua...")
+
+        for key, info in LUA_ITEMS.items():
+            filepath = info["path"]
+            if not os.path.exists(filepath):
+                self._log_error(f"Arquivo não encontrado: {os.path.basename(filepath)}")
+                errors += 1
+                continue
+
+            ok, bak = backup_file(filepath)
+            if not ok:
+                self._log_error(f"Falha no backup de {os.path.basename(filepath)}: {bak}")
+                errors += 1
+                continue
+
+            line = info["format"].format(
+                index=index, name=name, filtro=filtro,
+                weight=weight, descricao=desc,
+                type_pt=tipo, type_en=tipo_en
+            )
+
+            status, msg = append_to_table(filepath, info["pattern"], line, index)
+            if status == "ok":
+                self._log_ok(f"Inserido em {msg}")
+            elif status == "skip":
+                self._log_skip(msg)
+            else:
+                self._log_error(msg)
+                errors += 1
+
+        # ── Resultado ──
+        if errors == 0:
+            self._log_ok(f"Item '{index}' adicionado com sucesso! 🎉")
+            self.status_lbl.config(text=f"'{index}' adicionado com sucesso!", fg=SUCCESS)
+            messagebox.showinfo("Sucesso",
+                f"✔  Item '{name}' adicionado com sucesso!\n\nIndex: {index}\nTipo: {tipo}\nPeso: {weight}")
         else:
             self._log_warning(f"Processo concluído com {errors} erro(s). Verifique o log.")
             self.status_lbl.config(text=f"Concluído com {errors} erro(s).", fg=WARNING)
