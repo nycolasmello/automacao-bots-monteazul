@@ -8,6 +8,7 @@ a = Analysis(
     datas=[
         # Inclui os certificados SSL do certifi para HTTPS funcionar no exe
         (certifi.where(), 'certifi'),
+        ('ico-apps.ico', '.'),
     ],
     hiddenimports=[
         'certifi',
@@ -44,4 +45,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='ico-apps.ico',
 )

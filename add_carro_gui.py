@@ -1,4 +1,5 @@
 import os
+import sys
 import re
 import json
 import shutil
@@ -147,6 +148,18 @@ class App(tk.Tk):
         self.minsize(700, 480)
         self.configure(bg=BG)
         self.resizable(True, True)
+
+        # Configura o ícone da janela
+        try:
+            if getattr(sys, 'frozen', False):
+                icon_path = os.path.join(sys._MEIPASS, 'ico-apps.ico')
+            else:
+                icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ico-apps.ico')
+            
+            if os.path.exists(icon_path):
+                self.iconbitmap(icon_path)
+        except Exception:
+            pass
 
         self._center_window()
         self._build_ui()

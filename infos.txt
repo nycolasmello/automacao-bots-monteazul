@@ -1,0 +1,10 @@
+Para lançar novas att's
+
+# 1. Edite version.py → APP_VERSION = "2.2.0"
+# 2. Commit normal
+git add .
+git commit -m "feat: nova funcionalidade"
+# 3. Crie a tag — isso dispara o build automático no GitHub
+git tag v2.2.0
+git push
+git push --tags
