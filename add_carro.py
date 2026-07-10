@@ -3,31 +3,46 @@ import re
 import shutil
 import datetime
 
-# Constantes de caminhos
-BASE_PATH = r"z:\Base-MonteAzul\server-data\resources"
+import json
 
-FILES = {
-    "config_garage": {
-        "path": os.path.join(BASE_PATH, r"[scripts]\skips_garagem\config\config_garage.lua"),
-        "pattern": r"Config\.vehList\s*=\s*\{",
-        "format": "\t{{ hash = GetHashKey(\"{spawn}\"), name = '{spawn}', price = {price}, banido = false, modelo = '{name}', capacidade = {capacity}, tipo = '{type}' }},"
-    },
-    "config_server": {
-        "path": os.path.join(BASE_PATH, r"[scripts]\skips_inventario\server-side\Config_server.lua"),
-        "pattern": r"vehList\s*=\s*\{",
-        "format": "\t{{ hash = GetHashKey(\"{spawn}\"), name = \"{spawn}\", capacidade = {capacity} }},"
-    },
-    "basic_garage": {
-        "path": os.path.join(BASE_PATH, r"[vrp]\vrp\client\basic_garage.lua"),
-        "pattern": r"local\s+vehList\s*=\s*\{",
-        "format": "\t{{ ['hash'] = GetHashKey(\"{spawn}\"), ['name'] = '{spawn}', ['banned'] = false }},"
-    },
-    "inventory": {
-        "path": os.path.join(BASE_PATH, r"[vrp]\vrp\modules\inventory.lua"),
-        "pattern": r"vehs\.vehglobal\s*=\s*\{",
-        "format": "\t[\"{spawn}\"] = {{ ['name'] = \"{name}\", ['price'] = {price}, ['tipo'] = \"{type}\",  ['hash'] = GetHashKey(\"{spawn}\"), ['banned'] = false }},"
+# Constantes de caminhos
+DEFAULT_BASE_PATH = r"z:\Base_BlackWood\server-data\resources"
+CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+
+def get_base_path():
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("base_path", DEFAULT_BASE_PATH)
+        except Exception:
+            pass
+    return DEFAULT_BASE_PATH
+
+def get_files_config():
+    base_path = get_base_path()
+    return {
+        "config_garage": {
+            "path": os.path.join(base_path, r"[scripts]\skips_garagem\config\config_garage.lua"),
+            "pattern": r"Config\.vehList\s*=\s*\{",
+            "format": "\t{{ hash = GetHashKey(\"{spawn}\"), name = '{spawn}', price = {price}, banido = false, modelo = '{name}', capacidade = {capacity}, tipo = '{type}' }},"
+        },
+        "config_server": {
+            "path": os.path.join(base_path, r"[scripts]\skips_inventario\server-side\Config_server.lua"),
+            "pattern": r"vehList\s*=\s*\{",
+            "format": "\t{{ hash = GetHashKey(\"{spawn}\"), name = \"{spawn}\", capacidade = {capacity} }},"
+        },
+        "basic_garage": {
+            "path": os.path.join(base_path, r"[vrp]\vrp\client\basic_garage.lua"),
+            "pattern": r"local\s+vehList\s*=\s*\{",
+            "format": "\t{{ ['hash'] = GetHashKey(\"{spawn}\"), ['name'] = '{spawn}', ['banned'] = false }},"
+        },
+        "inventory": {
+            "path": os.path.join(base_path, r"[vrp]\vrp\modules\inventory.lua"),
+            "pattern": r"vehs\.vehglobal\s*=\s*\{",
+            "format": "\t[\"{spawn}\"] = {{ ['name'] = \"{name}\", ['price'] = {price}, ['tipo'] = \"{type}\",  ['hash'] = GetHashKey(\"{spawn}\"), ['banned'] = false }},"
+        }
     }
-}
 
 def backup_file(filepath):
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -114,7 +129,8 @@ def main():
     
     print("\nIniciando processo de automação...")
     
-    for key, info in FILES.items():
+    files_config = get_files_config()
+    for key, info in files_config.items():
         filepath = info["path"]
         pattern = info["pattern"]
         line_format = info["format"].format(

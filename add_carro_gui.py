@@ -14,26 +14,25 @@ import updater as _updater
 # ─────────────────────────────────────────────
 #  CAMINHOS PADRÃO DOS ARQUIVOS LUA
 # ─────────────────────────────────────────────
-BASE_LUA = r"z:\Base-MonteAzul\server-data\resources"
 
 LUA_FILES = {
     "config_garage": {
-        "path": os.path.join(BASE_LUA, r"[scripts]\skips_garagem\config\config_garage.lua"),
+        "rel_path": r"[scripts]\skips_garagem\config\config_garage.lua",
         "pattern": r"Config\.vehList\s*=\s*\{",
         "format": "\t{{ hash = GetHashKey(\"{spawn}\"), name = '{spawn}', price = {price}, banido = false, modelo = '{name}', capacidade = {capacity}, tipo = '{type}' }},"
     },
     "config_server": {
-        "path": os.path.join(BASE_LUA, r"[scripts]\skips_inventario\server-side\Config_server.lua"),
+        "rel_path": r"[scripts]\skips_inventario\server-side\Config_server.lua",
         "pattern": r"vehList\s*=\s*\{",
         "format": "\t{{ hash = GetHashKey(\"{spawn}\"), name = \"{spawn}\", capacidade = {capacity} }},"
     },
     "basic_garage": {
-        "path": os.path.join(BASE_LUA, r"[vrp]\vrp\client\basic_garage.lua"),
+        "rel_path": r"[vrp]\vrp\client\basic_garage.lua",
         "pattern": r"local\s+vehList\s*=\s*\{",
         "format": "\t{{ ['hash'] = GetHashKey(\"{spawn}\"), ['name'] = '{spawn}', ['banned'] = false }},"
     },
     "inventory": {
-        "path": os.path.join(BASE_LUA, r"[vrp]\vrp\modules\inventory.lua"),
+        "rel_path": r"[vrp]\vrp\modules\inventory.lua",
         "pattern": r"vehs\.vehglobal\s*=\s*\{",
         "format": "\t[\"{spawn}\"] = {{ ['name'] = \"{name}\", ['price'] = {price}, ['tipo'] = \"{type}\",  ['hash'] = GetHashKey(\"{spawn}\"), ['banned'] = false }},"
     }
@@ -41,17 +40,17 @@ LUA_FILES = {
 
 LUA_ITEMS = {
     "config_server": {
-        "path": os.path.join(BASE_LUA, r"[scripts]\skips_inventario\server-side\Config_server.lua"),
+        "rel_path": r"[scripts]\skips_inventario\server-side\Config_server.lua",
         "pattern": r"listaDeItens\s*=\s*\{",
         "format": "\t[\"{index}\"] = {{ index = \"{index}\", nome = \"{name}\", filtro = \"{filtro}\", type = \"{type_pt}\", funcao = false, descricao = \"{descricao}\" }},"
     },
     "inventory": {
-        "path": os.path.join(BASE_LUA, r"[vrp]\vrp\modules\inventory.lua"),
+        "rel_path": r"[vrp]\vrp\modules\inventory.lua",
         "pattern": r"local\s+itemlist\s*=\s*\{",
         "format": "\t[\"{index}\"] = {{\n\t\tindex = \"{index}\",\n\t\tname = \"{name}\",\n\t\ttype = \"{type_en}\",\n\t\tweight = {weight}\n\t}},"
     },
     "skips_admin": {
-        "path": os.path.join(BASE_LUA, r"[scripts]\skips_admin\fivem\cfg\config.lua"),
+        "rel_path": r"[scripts]\skips_admin\fivem\cfg\config.lua",
         "pattern": r"config\.itens\s*=\s*\{",
         "format": "\t[\"{index}\"] = {{ name = \"{name}\", filtro = \"{filtro}\", type = \"{type_pt}\", funcao = false, descricao = \"{descricao}\" }},"
     }
@@ -61,6 +60,7 @@ CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.j
 DEFAULT_CONFIG = {
     "stream_path": r"Z:\Base-MonteAzul\server-data\resources\[veiculos]\monte_veiculos\stream",
     "data_path":   r"Z:\Base-MonteAzul\server-data\resources\[veiculos]\monte_veiculos\data",
+    "base_path":   r"z:\Base-MonteAzul\server-data\resources",
 }
 
 # ─────────────────────────────────────────────
@@ -561,7 +561,7 @@ class App(tk.Tk):
         self._log_info("Inserindo veículo nos arquivos .lua...")
 
         for key, info in LUA_FILES.items():
-            filepath = info["path"]
+            filepath = os.path.join(cfg.get("base_path", ""), info["rel_path"])
             if not os.path.exists(filepath):
                 self._log_error(f"Arquivo não encontrado: {os.path.basename(filepath)}")
                 errors += 1
@@ -719,8 +719,10 @@ class App(tk.Tk):
 
         self._log_info("Inserindo item nos arquivos .lua...")
 
+        cfg = self.config_data
+
         for key, info in LUA_ITEMS.items():
-            filepath = info["path"]
+            filepath = os.path.join(cfg.get("base_path", ""), info["rel_path"])
             if not os.path.exists(filepath):
                 self._log_error(f"Arquivo não encontrado: {os.path.basename(filepath)}")
                 errors += 1
@@ -886,7 +888,7 @@ class App(tk.Tk):
     def _open_settings(self):
         dlg = tk.Toplevel(self)
         dlg.title("Configurações de Caminhos")
-        dlg.geometry("580x320")
+        dlg.geometry("600x380")
         dlg.configure(bg=BG)
         dlg.resizable(False, False)
         dlg.grab_set()
@@ -930,14 +932,16 @@ class App(tk.Tk):
         content.columnconfigure(1, weight=0)
 
         cfg = self.config_data
-        var_stream = path_field(content, "📁  Pasta Stream (.yft / .ytd)", 0, cfg["stream_path"])
-        var_data   = path_field(content, "📁  Pasta Data (.meta)", 2, cfg["data_path"])
+        var_base   = path_field(content, "📁  Base Path (resources)", 0, cfg.get("base_path", ""))
+        var_stream = path_field(content, "📁  Pasta Stream (.yft / .ytd)", 2, cfg.get("stream_path", ""))
+        var_data   = path_field(content, "📁  Pasta Data (.meta)", 4, cfg.get("data_path", ""))
 
         # Botões
         btn_row = tk.Frame(content, bg=BG)
-        btn_row.grid(row=4, column=0, columnspan=2, sticky="e", pady=(24, 0))
+        btn_row.grid(row=6, column=0, columnspan=2, sticky="e", pady=(24, 0))
 
         def on_save():
+            self.config_data["base_path"]   = var_base.get().strip()
             self.config_data["stream_path"] = var_stream.get().strip()
             self.config_data["data_path"]   = var_data.get().strip()
             save_config(self.config_data)
