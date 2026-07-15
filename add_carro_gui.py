@@ -58,9 +58,9 @@ LUA_ITEMS = {
 
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
 DEFAULT_CONFIG = {
-    "stream_path": r"Z:\Base-MonteAzul\server-data\resources\[veiculos]\monte_veiculos\stream",
-    "data_path":   r"Z:\Base-MonteAzul\server-data\resources\[veiculos]\monte_veiculos\data",
-    "base_path":   r"z:\Base-MonteAzul\server-data\resources",
+    "stream_path": r"Z:\Base_BlackWood\server-data\resources\[veiculos]\monte_veiculos\stream",
+    "data_path":   r"Z:\Base_BlackWood\server-data\resources\[veiculos]\monte_veiculos\data",
+    "base_path":   r"Z:\Base_BlackWood\server-data\resources",
 }
 
 # ─────────────────────────────────────────────
